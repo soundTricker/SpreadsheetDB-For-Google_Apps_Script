@@ -30,19 +30,19 @@
  * THE SOFTWARE.
 */
 (function(){
-  var SpreadsheetService = this.SpreadsheetService = function(key,spreadsheetApp) {
+  var SpreadsheetService = this.SpreadsheetService = function(key,consumeKey,consumerSecret,spreadsheetApp) {
     
     this.KEY_PREFIX = "SpreadsheetApiService_";
-    this.SHEET_LIST_KEY = this.KEY_PREFIX + this.key + "_SheetList";
     this.key = key;
+    this.SHEET_LIST_KEY = this.KEY_PREFIX + this.key + "_SheetList";
     this.spreadsheetApp = spreadsheetApp || SpreadsheetApp;
     
     this.dbSpreadsheet = this.spreadsheetApp.openById(key);
 
     var oauth = UrlFetchApp.addOAuthService("SpreadsheetQuery");
     oauth.setRequestTokenUrl("https://www.google.com/accounts/OAuthGetRequestToken?scope=https%3A%2F%2Fspreadsheets.google.com%2Ffeeds%2F");
-    oauth.setConsumerKey("anonymous");
-    oauth.setConsumerSecret("anonymous");
+    oauth.setConsumerKey(consumeKey||"anonymous");
+    oauth.setConsumerSecret(consumerSecret||"anonymous");
     oauth.setAuthorizationUrl("https://www.google.com/accounts/OAuthAuthorizeToken");
     oauth.setAccessTokenUrl("https://www.google.com/accounts/OAuthGetAccessToken");
     
