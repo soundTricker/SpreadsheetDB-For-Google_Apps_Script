@@ -47,13 +47,12 @@
 
 ### select row(s).
 
-  //If you need search rows,you use query method.
-  //if you need all rows,arg1 set empty string.
-  var rows = spreadsheetService.query(ss.getSheets()[0].getName(), "");
+    var rows = spreadsheetService.query(ss.getSheets()[0].getName(), ""); //if you need all rows,arg1 set empty string.
   
-  //maybe rows length is 2, and rows[0]'is 1, rows[1]'id is 2
-  //query result always return as a array. if result length is 1.
-  var row = spreadsheetService.query(ss.getSheets()[0].getName() , "id=1");
+    //maybe rows length is 2, and rows[0]'is 1, rows[1]'id is 2
+    //query result always return as a array. if result length is 1.
+    var row = spreadsheetService.query(ss.getSheets()[0].getName() , "id=1");
+
 
   - arg0 : sheetName
   - arg1 : query. query reference is http://code.google.com/intl/ja/apis/spreadsheets/data/3.0/reference.html#ListParameters
@@ -69,7 +68,7 @@
 
 ### update row
 
-   spreadsheetService.update(ss.getSheets()[0].getName() , row[0]);
+    spreadsheetService.update(ss.getSheets()[0].getName() , row[0]);
    
    - arg0 : sheetName
    - arg1 : update object. it shoud be selected object by query method.
