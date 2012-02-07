@@ -1,6 +1,6 @@
 /**
  * SpreadsheetService (Spreadsheet As A DB)
- * @version : 1.0.1
+ * @version : 1.0.2
  * @author keisuke (soundTricker318)
  * This Script can be Spreadsheet as a DB for Google Apps Script.
  * And it can do select/insert/update/delete Row(s) on Spreadsheet  by query.
@@ -15,6 +15,7 @@
  *  Release Note
  * 2012/02/05 1.0.0 first release 
  * 2012/02/07 1.0.1 bug fix and chage logic. if fetch error,not catch error.
+ * 2012/02/07 1.0.2 bug fix.Create OAuthOptions Class.
  */
 
 /*
@@ -132,6 +133,17 @@ function testCode() {
  * THE SOFTWARE.
 */
 (function(){
+  var OAuthOptions = this.OAuthOptions = function(method , headers) {
+    if(headers) {
+      this.headers = headers;
+      this.headers["GData-Version"] = "3.0";
+    } else {
+      this.headers =  {"GData-Version": "3.0"};
+    }
+    this.method = method;
+    this.oAuthServiceName = "SpreadsheetQuery";
+    this.oAuthUseToken = "always";
+  };
   var SpreadsheetService = this.SpreadsheetService = function(key,consumeKey,consumerSecret,spreadsheetApp) {
     
     this.KEY_PREFIX = "SpreadsheetApiService_";
@@ -147,13 +159,6 @@ function testCode() {
     oauth.setConsumerSecret(consumerSecret||"anonymous");
     oauth.setAuthorizationUrl("https://www.google.com/accounts/OAuthAuthorizeToken");
     oauth.setAccessTokenUrl("https://www.google.com/accounts/OAuthGetAccessToken");
-    
-    this.oauthOptions = {
-      "headers" : {"GData-Version": "3.0"},
-      "method" : "get",
-      "oAuthServiceName" : "SpreadsheetQuery",
-      "oAuthUseToken" : "always"
-    };      
   };
   
   SpreadsheetService.prototype = {
@@ -187,7 +192,7 @@ function testCode() {
     getWorksheetFeed : function() {
       var url = "https://spreadsheets.google.com/feeds/worksheets/" + this.key + "/private/full?alt=json&prettyprint=true";
       
-      var res = UrlFetchApp.fetch(url, this.oauthOptions);
+      var res = UrlFetchApp.fetch(url, new OAuthOptions("get"));
       
       var worksheetFeed = Utilities.jsonParse(res.getContentText());
       
@@ -200,10 +205,8 @@ function testCode() {
         throw new Error("nothing entry or that entry is not selected entry. this method can delete selected entry");
       }
       
-      var deleteOptions = eval(uneval(this.oauthOptions));
+      var deleteOptions = new OAuthOptions("delete" , {"If-Match" : "*"});
       deleteOptions.contentType = "application/atom+xml";
-      deleteOptions.method = "delete";
-      deleteOptions.headers["If-Match"] = "*";
       var url = entry.__originalEntry__.link[0].href;
       return  UrlFetchApp.fetch(url, deleteOptions);
     },
@@ -226,9 +229,8 @@ function testCode() {
       
       var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full";
       var xml = Xml.element("entry", xmlChildren);
-      var postOptions = eval(uneval(this.oauthOptions));
+      var postOptions = new OAuthOptions("post");
       postOptions.contentType = "application/atom+xml";
-      postOptions.method = "post";
       postOptions.payload = xml.toXmlString();
       
       return UrlFetchApp.fetch(url, postOptions);
@@ -278,9 +280,8 @@ function testCode() {
       
 
       var xml = Xml.element("entry", xmlChildren);
-      var putOptions = eval(uneval(this.oauthOptions));
+      var putOptions = new OAuthOptions("put");
       putOptions.contentType = "application/atom+xml";
-      putOptions.method = "put";
       putOptions.payload = xml.toXmlString();
       var url = entry.__originalEntry__.link[0].href;
       var res = UrlFetchApp.fetch(url, putOptions);
@@ -299,7 +300,7 @@ function testCode() {
         }
       }
       var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full?alt=json&prettyprint=false&v=3.0&sq=" + encodeURIComponent(queryString) + optionString;
-      var res =  UrlFetchApp.fetch(url,this.oauthOptions);
+      var res =  UrlFetchApp.fetch(url,new OAuthOptions("get"));
       var j = Utilities.jsonParse(res.getContentText());
       
       var entries = j.feed.entry;
