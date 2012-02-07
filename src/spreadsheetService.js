@@ -196,15 +196,8 @@
             optionString += index + "=" + encodeURI(advanceOptions[index]);
         }
       }
-      var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full?alt=json&prettyprint=false&v=3.0&sq=" + encodeURI(queryString) + optionString;
-      var res = null;
-      try {
-        res = UrlFetchApp.fetch(url,this.oauthOptions);
-        
-      } catch(e) {
-        Logger.log(e + Utilities.jsonStringify(e));
-        return [];
-      }
+      var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full?alt=json&prettyprint=false&v=3.0&sq=" + encodeURIComponent(queryString) + optionString;
+      var res =  UrlFetchApp.fetch(url,this.oauthOptions);
       
       var j = Utilities.jsonParse(res.getContentText());
       
