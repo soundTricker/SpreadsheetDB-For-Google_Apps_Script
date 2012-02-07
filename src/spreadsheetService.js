@@ -193,7 +193,7 @@
       if(advanceOptions) {
         optionString = "&";
         for(var index in advanceOptions) {
-            optionString += index + "=" + encodeURI(advanceOptions[index]);
+            optionString += index + "=" + encodeURI(advanceOptions[index]) + "&";
         }
       }
       var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full?alt=json&prettyprint=false&v=3.0&sq=" + encodeURIComponent(queryString) + optionString;
