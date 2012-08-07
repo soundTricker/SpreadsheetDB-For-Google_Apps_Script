@@ -12,11 +12,11 @@
  - Library ID: `MlMEyCNWeCV97wefWrBRcEQV62A3znfOO`
 - Do you need code assist? You can use mock library and mini hack for code assist.
  - Mock Library ID: `MORnDiFLK6dWUCyoTNsS1HQV62A3znfOO`
- - Use adobe library id and below code.
+ - Use both adobe library ids and write below code.
+- 
 
-
-    var spreadsheetService = GSSDB.createService(spreadsheetId , consumerKey , consumerSecret);
-    //var spreadsheetService = SpreadsheetService; it's hack for gas editor. you can do code assist after code.
+        var spreadsheetService = GSSDB.createService(spreadsheetId , consumerKey , consumerSecret);
+        //var spreadsheetService = SpreadsheetService; it's hack for gas editor. you can do code assist after code.
     
 
 ## Example
