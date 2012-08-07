@@ -7,24 +7,28 @@
 ## How it work?
 -  It use List Base Feed on Google Spreadsheet API.
 
+## How use it?
+- You can use it as a [Library](https://developers.google.com/apps-script/guide_libraries)
+ - Library ID: `MlMEyCNWeCV97wefWrBRcEQV62A3znfOO`
+- Do you need code assist? You can use mock library and mini hack for code assist.
+ - Mock Library ID: `MORnDiFLK6dWUCyoTNsS1HQV62A3znfOO`
+ - Use adobe library id and below code.
+
+
+    var spreadsheetService = GSSDB.createService(spreadsheetId , consumerKey , consumerSecret);
+    //var spreadsheetService = SpreadsheetService; it's hack for gas editor. you can do code assist after code.
+    
+
 ## Example
-### Constractor
+### Initializer
   
-    var spreadsheetService = new SpreadsheetService(ss.getId());
+    var spreadsheetService = GSSDB.createService(ss.getId());
     //if you need set ConsumerKey and ConsumerSecret
-    var spreadsheetService = new SpreadsheetService(ss.getId() , "consumerKey" , "consumerSecret");
+    var spreadsheetService = GSSDB.createService(ss.getId() , "consumerKey" , "consumerSecret");
 
   - args1 spreadsheet id 
   - args2 consumerKey
   - args3 consumerSecret
-
-### init (When you use SpreadsheetService,You should call init method.)
-
-    
-    spreadsheetService.init();
-    
-    
-  - no args
 
 ### insert row.
 
