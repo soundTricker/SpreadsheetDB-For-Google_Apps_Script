@@ -163,167 +163,170 @@ function testCode() {
   
   SpreadsheetService.prototype = {
     
-    init : function() {
-      var listString = ScriptProperties.getProperty(this.SHEET_LIST_KEY);
-      
-      if(listString != null) {
-        this.sheetList = Utilities.jsonParse(listString);
-        return;
-      }
-      this.refleshListKey();
-    },
+  init : function() {
+    var listString = ScriptProperties.getProperty(this.SHEET_LIST_KEY);
     
-    refleshListKey : function() {
-      var worksheetFeed = this.getWorksheetFeed();
-      
-      this.sheetList = {};
-      for(var i = 0;i < worksheetFeed.feed.entry.length;i++) {
-        
-        var splitSheetId = worksheetFeed.feed.entry[i].id["$t"].split("/");
-        var sheetId = splitSheetId[splitSheetId.length -1];
-        
-        var sheetName = worksheetFeed.feed.entry[i].title["$t"];
-        
-        this.sheetList[sheetName] = sheetId;
-      }
-      ScriptProperties.setProperty(this.SHEET_LIST_KEY, Utilities.jsonStringify(this.sheetList));
-    },
+    if(listString != null) {
+      this.sheetList = Utilities.jsonParse(listString);
+      return;
+    }
+    this.refleshListKey();
+  },
+  
+  refleshListKey : function() {
+    var worksheetFeed = this.getWorksheetFeed();
     
-    getWorksheetFeed : function() {
-      var url = "https://spreadsheets.google.com/feeds/worksheets/" + this.key + "/private/full?alt=json&prettyprint=true";
+    this.sheetList = {};
+    for(var i = 0;i < worksheetFeed.feed.entry.length;i++) {
       
-      var res = UrlFetchApp.fetch(url, new OAuthOptions("get"));
+      var splitSheetId = worksheetFeed.feed.entry[i].id["$t"].split("/");
+      var sheetId = splitSheetId[splitSheetId.length -1];
       
-      var worksheetFeed = Utilities.jsonParse(res.getContentText());
+      var sheetName = worksheetFeed.feed.entry[i].title["$t"];
       
-      return worksheetFeed;
-      
-    },
+      this.sheetList[sheetName] = sheetId;
+    }
+    ScriptProperties.setProperty(this.SHEET_LIST_KEY, Utilities.jsonStringify(this.sheetList));
+  },
+  
+  getWorksheetFeed : function() {
+    var url = "https://spreadsheets.google.com/feeds/worksheets/" + this.key + "/private/full?alt=json&prettyprint=true";
     
-    deleteEntry : function(sheetName , entry) {
-      if(!entry || !entry.__originalEntry__) {
-        throw new Error("nothing entry or that entry is not selected entry. this method can delete selected entry");
-      }
-      
-      var deleteOptions = new OAuthOptions("delete" , {"If-Match" : "*"});
-      deleteOptions.contentType = "application/atom+xml";
-      var url = entry.__originalEntry__.link[0].href;
-      return  UrlFetchApp.fetch(url, deleteOptions);
-    },
+    var res = UrlFetchApp.fetch(url, new OAuthOptions("get"));
     
-    insert : function(sheetName , entry) {
-      if(!entry) {
-        throw new Error("nothing entry");
-      }
-      
-      var xmlChildren = [];
-      
-      xmlChildren.push(Xml.attribute("xmlns" , "http://www.w3.org/2005/Atom"));
-      xmlChildren.push(Xml.attribute("xmlns:gsx" , "http://schemas.google.com/spreadsheets/2006/extended"));
-      for(var index in entry) {
-        if(index == "__originalEntry__") {
-          continue;
-        }
-        xmlChildren.push(Xml.element("gsx:" + index, [entry[index]]));
-      }
-      
-      var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full";
-      var xml = Xml.element("entry", xmlChildren);
-      var postOptions = new OAuthOptions("post");
-      postOptions.contentType = "application/atom+xml";
-      postOptions.payload = xml.toXmlString();
-      
-      return UrlFetchApp.fetch(url, postOptions);
-    },
+    var worksheetFeed = Utilities.jsonParse(res.getContentText());
     
-    update : function(sheetName , entry) {
-      if(!entry.__originalEntry__) {
-        throw new Error("Given __originalEntry__ property. that set at this.query method");
-      }
-      var xmlChildren = [];
-      xmlChildren.push(Xml.element("id", [entry.__originalEntry__.id["$t"]]));
-      xmlChildren.push(Xml.element("updated", [Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd'T'HH:mm:ss.sss'Z'")]));
-      xmlChildren.push(Xml.attribute("xmlns" , "http://www.w3.org/2005/Atom"));
-      xmlChildren.push(Xml.attribute("xmlns:gsx" , "http://schemas.google.com/spreadsheets/2006/extended"));
-      xmlChildren.push(Xml.attribute("xmlns:gd" , "http://schemas.google.com/g/2005"));
-      xmlChildren.push(Xml.attribute("gd:etag" , entry.__originalEntry__["gd$etag"]));
-      xmlChildren.push(Xml.element("link" ,
-                                   [
-                                     Xml.attribute("rel", "self") ,
-                                     Xml.attribute("type", "application/atom+xml"),
-                                     Xml.attribute("href", entry.__originalEntry__.id["$t"])
-                                   ]));
-      xmlChildren.push(Xml.element("link" ,
-                                   [
-                                     Xml.attribute("rel", "edit") ,
-                                     Xml.attribute("type", "application/atom+xml"),
-                                     Xml.attribute("href", entry.__originalEntry__.link[0].href)
-                                   ]));
-      xmlChildren.push(Xml.element("category", 
-                                   [
-                                     Xml.attribute("scheme", "http://schemas.google.com/spreadsheets/2006"),
-                                     Xml.attribute("term", "http://schemas.google.com/spreadsheets/2006#list")
-                                   ]));
-      var content = "";
-      for(var index in entry) {
-        if(index == "__originalEntry__") {
-          continue;
-        }
-        xmlChildren.push(Xml.element("gsx:" + index, [entry[index], Xml.attribute("type", "text")]));
-        content += index + ":" + entry[index] + ",";
-      }
-      xmlChildren.push(Xml.element("content" ,
-                                   [
-                                     Xml.attribute("type", "text"),
-                                     encodeURI(content)
-                                   ]));
-      
-
-      var xml = Xml.element("entry", xmlChildren);
-      var putOptions = new OAuthOptions("put");
-      putOptions.contentType = "application/atom+xml";
-      putOptions.payload = xml.toXmlString();
-      var url = entry.__originalEntry__.link[0].href;
-      var res = UrlFetchApp.fetch(url, putOptions);
-      return res;
-    },
+    return worksheetFeed;
     
-    
-    query : function(sheetName, queryString, advanceOptions) {
-      var reverse;
-      var order;
-      var optionString = "";
-      if(advanceOptions) {
-        optionString = "&";
-        for(var index in advanceOptions) {
-            optionString += index + "=" + encodeURI(advanceOptions[index]) + "&";
-        }
-      }
-      var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full?alt=json&prettyprint=false&v=3.0&sq=" + encodeURIComponent(queryString) + optionString;
-      var res =  UrlFetchApp.fetch(url,new OAuthOptions("get"));
-      var j = Utilities.jsonParse(res.getContentText());
-      
-      var entries = j.feed.entry;
-      
-      var dataList = [];
-      
-      if(!entries) {
-        return dataList;
-      }
-      for(var i = 0; i < entries.length; i++) {
-        var entry = entries[i];
-        var data = {};
-        data.__originalEntry__ = entry;
-        for(var index in entry) {
-          if(index.indexOf("gsx$") < 0)  {
-            continue;
-          }
-          data[index.replace("gsx$","")] = entry[index]["$t"];
-        }
-        dataList.push(data);
-      }
-      return dataList;
+  },
+  
+  deleteEntry : function(sheetName , entry) {
+    if(!entry || !entry.__originalEntry__) {
+      throw new Error("nothing entry or that entry is not selected entry. this method can delete selected entry");
     }
     
+    var deleteOptions = new OAuthOptions("delete" , {"If-Match" : "*"});
+    deleteOptions.contentType = "application/atom+xml";
+    var url = entry.__originalEntry__.link[0].href;
+    return  UrlFetchApp.fetch(url, deleteOptions);
+  },
+  
+  insert : function(sheetName , entry) {
+    if(!entry) {
+      throw new Error("nothing entry");
+    }
+    
+    var root = XmlService.createElement("entry");
+    var xmlns = XmlService.getNamespace("http://www.w3.org/2005/Atom")
+    var gsxNs = XmlService.getNamespace("gsx", "http://schemas.google.com/spreadsheets/2006/extended");
+    root
+    .setNamespace(xmlns);
+    
+    for(var index in entry) {
+      if(index == "__originalEntry__") {
+        continue;
+      }
+      root.addContent(XmlService.createElement(index, gsxNs).setText(entry[index]));
+    }
+    
+    var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full";
+    var xml = XmlService.createDocument(root);
+    var postOptions = new OAuthOptions("post");
+    postOptions.contentType = "application/atom+xml";
+    postOptions.payload = XmlService.getRawFormat().format(xml);
+    Logger.log(XmlService.getPrettyFormat().format(xml));
+    return UrlFetchApp.fetch(url, postOptions);
+  },
+  
+  update : function(sheetName , entry) {
+    if(!entry.__originalEntry__) {
+      throw new Error("Given __originalEntry__ property. that set at this.query method");
+    }
+    var xmlns = XmlService.getNamespace("http://www.w3.org/2005/Atom");
+    var gdNs = XmlService.getNamespace("gd", "http://schemas.google.com/g/2005");
+    var gsxNs = XmlService.getNamespace("gsx", "http://schemas.google.com/spreadsheets/2006/extended");
+
+    var root = XmlService.createElement("entry")
+    .setNamespace(xmlns)
+    .setAttribute("etag", entry.__originalEntry__.gd$etag, gdNs)
+    .addContent(XmlService.createElement("id").setText(entry.__originalEntry__.id.$t))
+    .addContent(XmlService.createElement("updated").setText(Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd'T'HH:mm:ss.sss'Z'")))
+    .addContent(
+      XmlService.createElement("link")
+      .setAttribute("rel" , "self")
+      .setAttribute("type", "application/atom+xml")
+      .setAttribute("href", entry.__originalEntry__.id.$t)
+    )
+    .addContent(
+      XmlService.createElement("link")
+      .setAttribute("rel" , "edit")
+      .setAttribute("type", "application/atom+xml")
+      .setAttribute("href", entry.__originalEntry__.link[0].href)
+    )
+    .addContent(
+      XmlService.createElement("category")
+      .setAttribute("scheme", "http://schemas.google.com/spreadsheets/2006")
+      .setAttribute("term", "http://schemas.google.com/spreadsheets/2006#list")
+    );
+    var content = "";
+    for(var index in entry) {
+      if(index == "__originalEntry__") {
+        continue;
+      }
+      root.addContent(XmlService.createElement(index,gsxNs).setText(entry[index]).setAttribute("type", "text"));
+      content += index + ":" + entry[index] + ",";
+    }
+    root.addContent(
+      XmlService
+      .createElement("content")
+      .setText(encodeURI(content))
+      .setAttribute("type", "text")
+    );
+    
+    Logger.log(XmlService.getPrettyFormat().format(root));
+    
+    var putOptions = new OAuthOptions("put");
+    putOptions.contentType = "application/atom+xml";
+    putOptions.payload = XmlService.getRawFormat().format(root);
+    var url = entry.__originalEntry__.link[0].href;
+    var res = UrlFetchApp.fetch(url, putOptions);
+    return res;
+  },
+  
+  
+  query : function(sheetName, queryString, advanceOptions) {
+    var reverse;
+    var order;
+    var optionString = "";
+    if(advanceOptions) {
+      optionString = "&";
+      for(var index in advanceOptions) {
+        optionString += index + "=" + encodeURI(advanceOptions[index]) + "&";
+      }
+    }
+    var url = "https://spreadsheets.google.com/feeds/list/" + this.key + "/" + this.sheetList[sheetName] +  "/private/full?alt=json&prettyprint=false&v=3.0&sq=" + encodeURIComponent(queryString) + optionString;
+    var res =  UrlFetchApp.fetch(url,new OAuthOptions("get"));
+    var j = Utilities.jsonParse(res.getContentText());
+    
+    var entries = j.feed.entry;
+    
+    var dataList = [];
+    
+    if(!entries) {
+      return dataList;
+    }
+    for(var i = 0; i < entries.length; i++) {
+      var entry = entries[i];
+      var data = {};
+      data.__originalEntry__ = entry;
+      for(var index in entry) {
+        if(index.indexOf("gsx$") < 0)  {
+          continue;
+        }
+        data[index.replace("gsx$","")] = entry[index]["$t"];
+      }
+      dataList.push(data);
+    }
+    return dataList;
   };
 })();
